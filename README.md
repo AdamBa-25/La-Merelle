@@ -3,6 +3,7 @@ The game of Nine Men's Morris, also known as the mill game, is a very ancient ga
 
 ## Rules
 ![Merelle Board](/Images/MerelleBoard.png)
+
 In its original form, the game is played on a board made up of three squares, themselves composed of nine points located at the corners and the midpoints of the squares’ sides. These squares are then connected to each other through their central points.
 
 Each player has nine pieces, and there are two distinct phases in each game: an initial phase where the pieces are placed, and once all the pieces have been positioned, the game moves into a movement phase where the real strategy begins.
