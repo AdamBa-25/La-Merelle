@@ -14,8 +14,6 @@ import boardifier.model.TextElement;
  *
  * Les couleurs sont transmises via colorJ1 / colorJ2 avant le lancement.
  * Les pions ne sont pas placés sur le plateau à la création.
- *
- * Calqué sur HoleStageFactory.java du tutoriel HoleConsole.
  */
 public class MerelleStageFactory extends StageElementsFactory {
 
@@ -44,10 +42,19 @@ public class MerelleStageFactory extends StageElementsFactory {
     @Override
     public void setup() {
 
-        // Sécurité : si une couleur invalide a été transmise, on remet les valeurs par défaut
+        // Sécurité : couleurs invalides → valeurs par défaut
         if (!MerellePawn.isValidColor(colorJ1)) colorJ1 = MerellePawn.PAWN_BLACK;
         if (!MerellePawn.isValidColor(colorJ2)) colorJ2 = MerellePawn.PAWN_RED;
-        if (colorJ1 == colorJ2) colorJ2 = MerellePawn.PAWN_RED;
+
+        // Sécurité : couleurs identiques → cherche la première couleur différente pour J2
+        if (colorJ1 == colorJ2) {
+            for (int i = 0; i < MerellePawn.NB_COLORS; i++) {
+                if (i != colorJ1) {
+                    colorJ2 = i;
+                    break;
+                }
+            }
+        }
 
         // --- TextElement : nom du joueur courant ---
         TextElement text = new TextElement(stageModel.getCurrentPlayerName(), stageModel);
@@ -58,18 +65,18 @@ public class MerelleStageFactory extends StageElementsFactory {
         MerelleBoard board = new MerelleBoard(0, 1, stageModel);
         stageModel.setBoard(board);
 
-        // --- 9 pions joueur 0 avec la couleur choisie ---
+        // --- 9 pions joueur 0 ---
         MerellePawn[] pawnsJ1 = new MerellePawn[9];
         for (int i = 0; i < 9; i++) {
             pawnsJ1[i] = new MerellePawn(colorJ1, stageModel);
         }
-        stageModel.setBlackPawns(pawnsJ1);
+        stageModel.setPawnsJ1(pawnsJ1);
 
-        // --- 9 pions joueur 1 avec la couleur choisie ---
+        // --- 9 pions joueur 1 ---
         MerellePawn[] pawnsJ2 = new MerellePawn[9];
         for (int i = 0; i < 9; i++) {
             pawnsJ2[i] = new MerellePawn(colorJ2, stageModel);
         }
-        stageModel.setRedPawns(pawnsJ2);
+        stageModel.setPawnsJ2(pawnsJ2);
     }
 }

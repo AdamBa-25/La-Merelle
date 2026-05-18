@@ -386,8 +386,8 @@ public class MerelleController extends Controller {
      */
     private MerellePawn getNextPawnInHand(MerelleStageModel stageModel, int playerId) {
         MerellePawn[] pawns = (playerId == 0)
-                ? stageModel.getBlackPawns()
-                : stageModel.getRedPawns();
+                ? stageModel.getPawnsJ1()
+                : stageModel.getPawnsJ2();
         for (MerellePawn pawn : pawns)
             if (pawn.getContainer() == null) return pawn;
         return null;

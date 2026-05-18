@@ -21,14 +21,16 @@ import model.MerelleStageModel;
  *
  * Calqué sur HoleStageView.java du tutoriel HoleConsole.
  */
-public class MerelleStageView extends GameStageView {
+public class MerelleStageView extends GameStageView
+{
 
     public MerelleStageView(String name, GameStageModel gameStageModel) {
         super(name, gameStageModel);
     }
 
     @Override
-    public void createLooks() throws GameException {
+    public void createLooks() throws GameException
+    {
         MerelleStageModel model = (MerelleStageModel) gameStageModel;
 
         // Look du texte affichant le nom du joueur courant
@@ -38,12 +40,12 @@ public class MerelleStageView extends GameStageView {
         // rowHeight=1, colWidth=3, depth=1, borderWidth=1, showCoords=true
         addLook(new ClassicBoardLook(1, 3, model.getBoard(), 1, 1, true));
 
-        // Looks des 9 pions noirs
-        for (MerellePawnLook look : createPawnLooks(model.getBlackPawns())) {
+        for (MerellePawnLook look : createPawnLooks(model.getPawnsJ1()))
+        {
             addLook(look);
         }
-        // Looks des 9 pions rouges
-        for (MerellePawnLook look : createPawnLooks(model.getRedPawns())) {
+        for (MerellePawnLook look : createPawnLooks(model.getPawnsJ2()))
+        {
             addLook(look);
         }
     }
@@ -51,9 +53,11 @@ public class MerelleStageView extends GameStageView {
     /**
      * Crée un tableau de MerellePawnLook pour un ensemble de pions.
      */
-    private MerellePawnLook[] createPawnLooks(model.MerellePawn[] pawns) {
+    private MerellePawnLook[] createPawnLooks(model.MerellePawn[] pawns)
+    {
         MerellePawnLook[] looks = new MerellePawnLook[pawns.length];
-        for (int i = 0; i < pawns.length; i++) {
+        for (int i = 0; i < pawns.length; i++)
+        {
             looks[i] = new MerellePawnLook(pawns[i]);
         }
         return looks;
