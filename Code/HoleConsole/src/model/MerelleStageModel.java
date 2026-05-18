@@ -38,7 +38,16 @@ public class MerelleStageModel extends GameStageModel {
     private int pawnsInHandJ1; // pions joueur 0 pas encore posés
     private int pawnsInHandJ2; // pions joueur 1 pas encore posés
     private boolean millJustFormed; // true si une capture est en attente
-    private String[] lastMoves; // historique des derniers coups
+    private String[] lastMoves;     // historique des derniers coups
+
+    /**
+     * Dernier moulin formé par chaque joueur, encodé comme "pos1-pos2-pos3" trié.
+     * Null si le joueur n'a pas encore formé de moulin, ou si son dernier coup n'en a pas créé.
+     * Utilisé pour appliquer la règle : un joueur ne peut pas casser et reformer
+     * le même moulin deux tours de suite.
+     * Index 0 = joueur 0, index 1 = joueur 1.
+     */
+    private String[] lastMillByPlayer;
 
     /**
      * Constructeur appelé par StageFactory via réflexion.
@@ -53,6 +62,7 @@ public class MerelleStageModel extends GameStageModel {
         pawnsInHandJ2  = 9;
         millJustFormed = false;
         lastMoves      = new String[DRAW_HISTORY_SIZE];
+        lastMillByPlayer = new String[2]; // null par défaut (aucun moulin mémorisé)
     }
 
     // ===== Getters / Setters =====
@@ -64,12 +74,24 @@ public class MerelleStageModel extends GameStageModel {
     }
 
     public MerellePawn[] getPawnsJ1() { return pawnsJ1; }
+
+    /**
+     * Retourne la couleur (constante MerellePawn.PAWN_*) du joueur 0.
+     * Lue depuis le premier pion de J1 — valide dès que les pions sont créés.
+     */
+    public int getColorJ1() { return pawnsJ1[0].getColor(); }
     public void setPawnsJ1(MerellePawn[] pawns) {
         this.pawnsJ1 = pawns;
         for (MerellePawn p : pawns) addElement(p);
     }
 
     public MerellePawn[] getPawnsJ2() { return pawnsJ2; }
+
+    /**
+     * Retourne la couleur (constante MerellePawn.PAWN_*) du joueur 1.
+     * Lue depuis le premier pion de J2 — valide dès que les pions sont créés.
+     */
+    public int getColorJ2() { return pawnsJ2[0].getColor(); }
     public void setPawnsJ2(MerellePawn[] pawns) {
         this.pawnsJ2 = pawns;
         for (MerellePawn p : pawns) addElement(p);
@@ -135,6 +157,52 @@ public class MerelleStageModel extends GameStageModel {
             if (lastMoves[i] == null || !lastMoves[i].equals(lastMoves[0])) return false;
         }
         return true;
+    }
+
+    // ===== Gestion de la règle "même moulin interdit deux tours de suite" =====
+
+    /**
+     * Mémorise le moulin que le joueur playerId vient de former.
+     * Le moulin est encodé en triant ses 3 positions pour garantir une clé unique
+     * quelle que soit l'ordre dans lequel les positions sont passées.
+     *
+     * @param playerId     index du joueur (0 ou 1)
+     * @param millPositions tableau de 3 positions logiques formant le moulin
+     */
+    public void recordLastMill(int playerId, int[] millPositions) {
+        int[] s = millPositions.clone();
+        // Tri à bulles sur 3 éléments
+        if (s[0] > s[1]) { int t = s[0]; s[0] = s[1]; s[1] = t; }
+        if (s[1] > s[2]) { int t = s[1]; s[1] = s[2]; s[2] = t; }
+        if (s[0] > s[1]) { int t = s[0]; s[0] = s[1]; s[1] = t; }
+        lastMillByPlayer[playerId] = s[0] + "-" + s[1] + "-" + s[2];
+    }
+
+    /**
+     * Efface le moulin mémorisé pour le joueur playerId.
+     * À appeler quand le joueur joue un coup qui ne forme pas de moulin.
+     *
+     * @param playerId index du joueur (0 ou 1)
+     */
+    public void clearLastMill(int playerId) {
+        lastMillByPlayer[playerId] = null;
+    }
+
+    /**
+     * Retourne true si le moulin à vérifier est identique au dernier moulin
+     * mémorisé pour ce joueur (règle : même moulin interdit 2 tours de suite).
+     *
+     * @param playerId     index du joueur (0 ou 1)
+     * @param millPositions tableau de 3 positions logiques à vérifier
+     */
+    public boolean isSameMillAsLast(int playerId, int[] millPositions) {
+        if (lastMillByPlayer[playerId] == null) return false;
+        int[] s = millPositions.clone();
+        if (s[0] > s[1]) { int t = s[0]; s[0] = s[1]; s[1] = t; }
+        if (s[1] > s[2]) { int t = s[1]; s[1] = s[2]; s[2] = t; }
+        if (s[0] > s[1]) { int t = s[0]; s[0] = s[1]; s[1] = t; }
+        String key = s[0] + "-" + s[1] + "-" + s[2];
+        return key.equals(lastMillByPlayer[playerId]);
     }
 
     @Override

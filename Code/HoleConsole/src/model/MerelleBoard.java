@@ -241,21 +241,26 @@ public class MerelleBoard extends ContainerElement {
     }
 
     /**
-     * Retourne true si la position pos fait partie d'un moulin complet du joueur playerId.
-     * Algorithme : pour chaque moulin contenant pos, vérifie si les 3 cases
-     * sont occupées par des pions de playerId.
+     * Retourne true si la position pos fait partie d'un moulin complet de la couleur playerColor.
+     *
+     * IMPORTANT : playerColor est une couleur de pion (MerellePawn.PAWN_BLACK, PAWN_RED, etc.),
+     * pas un index de joueur (0 ou 1). Les deux coïncident quand on joue Noir/Rouge par défaut,
+     * mais divergent dès que les joueurs choisissent d'autres couleurs.
+     *
+     * @param pos         position logique (0-23) à vérifier
+     * @param playerColor couleur du joueur (constante MerellePawn.PAWN_*)
      */
-    public boolean isInMill(int pos, int playerId) {
+    public boolean isInMill(int pos, int playerColor) {
         for (int[] mill : MILLS) {
-            // Vérifie si pos est dans ce moulin
+            // Vérifie si pos appartient à ce moulin
             boolean posInMill = false;
             for (int p : mill) if (p == pos) { posInMill = true; break; }
             if (!posInMill) continue;
-            // Vérifie si les 3 cases du moulin appartiennent toutes à playerId
+            // Vérifie si les 3 cases sont toutes occupées par la même couleur
             boolean allSame = true;
             for (int p : mill) {
                 MerellePawn pw = getPawnAt(p);
-                if (pw == null || pw.getColor() != playerId) { allSame = false; break; }
+                if (pw == null || pw.getColor() != playerColor) { allSame = false; break; }
             }
             if (allSame) return true;
         }
@@ -263,35 +268,42 @@ public class MerelleBoard extends ContainerElement {
     }
 
     /**
-     * Retourne true si un moulin vient d'être formé à pos pour playerId.
+     * Retourne true si un moulin vient d'être formé à pos pour la couleur playerColor.
      * Simple alias de isInMill(), appelé après chaque placement ou déplacement.
+     *
+     * @param pos         position logique (0-23) où le pion vient d'être posé/déplacé
+     * @param playerColor couleur du joueur (constante MerellePawn.PAWN_*)
      */
-    public boolean checkMillFormed(int pos, int playerId) {
-        return isInMill(pos, playerId);
+    public boolean checkMillFormed(int pos, int playerColor) {
+        return isInMill(pos, playerColor);
     }
 
     /**
-     * Compte et retourne le nombre de pions du joueur playerId sur le plateau.
+     * Compte et retourne le nombre de pions de la couleur playerColor sur le plateau.
      * Utilisé pour détecter la condition de défaite (moins de 3 pions).
+     *
+     * @param playerColor couleur du joueur (constante MerellePawn.PAWN_*)
      */
-    public int countPawns(int playerId) {
+    public int countPawns(int playerColor) {
         int count = 0;
         for (int pos = 0; pos < 24; pos++) {
             MerellePawn pw = getPawnAt(pos);
-            if (pw != null && pw.getColor() == playerId) count++;
+            if (pw != null && pw.getColor() == playerColor) count++;
         }
         return count;
     }
 
     /**
-     * Retourne true si le joueur playerId ne peut plus bouger aucun de ses pions.
-     * Pour chaque pion du joueur, vérifie si au moins une case adjacente est libre.
+     * Retourne true si le joueur de couleur playerColor ne peut plus bouger aucun pion.
+     * Pour chaque pion de cette couleur, vérifie si au moins une case adjacente est libre.
      * Dès qu'une case libre est trouvée, retourne false (pas bloqué).
+     *
+     * @param playerColor couleur du joueur (constante MerellePawn.PAWN_*)
      */
-    public boolean isBlocked(int playerId) {
+    public boolean isBlocked(int playerColor) {
         for (int pos = 0; pos < 24; pos++) {
             MerellePawn pw = getPawnAt(pos);
-            if (pw != null && pw.getColor() == playerId) {
+            if (pw != null && pw.getColor() == playerColor) {
                 for (int adj : ADJACENCY[pos])
                     if (isFreeAt(adj)) return false; // ce pion peut bouger → pas bloqué
             }
@@ -300,16 +312,43 @@ public class MerelleBoard extends ContainerElement {
     }
 
     /**
-     * Retourne true si tous les pions du joueur playerId sont dans des moulins.
+     * Retourne true si tous les pions de la couleur playerColor sont dans des moulins.
      * Cas spécial : si c'est vrai, les règles autorisent à capturer un pion en moulin.
+     *
+     * @param playerColor couleur du joueur (constante MerellePawn.PAWN_*)
      */
-    public boolean allPawnsInMills(int playerId) {
+    public boolean allPawnsInMills(int playerColor) {
         for (int pos = 0; pos < 24; pos++) {
             MerellePawn pw = getPawnAt(pos);
-            // Si un pion de ce joueur est hors moulin → pas tous en moulin
-            if (pw != null && pw.getColor() == playerId && !isInMill(pos, playerId))
+            // Si un pion de cette couleur est hors moulin → pas tous en moulin
+            if (pw != null && pw.getColor() == playerColor && !isInMill(pos, playerColor))
                 return false;
         }
         return true;
+    }
+
+    /**
+     * Retourne le premier moulin complet de playerColor contenant la position pos,
+     * sous forme d'un tableau de 3 positions logiques.
+     * Retourne null si pos ne fait partie d'aucun moulin complet de cette couleur.
+     * Utilisé par le contrôleur pour mémoriser le moulin formé (règle "même moulin interdit 2 tours").
+     *
+     * @param pos         position logique (0-23) à vérifier
+     * @param playerColor couleur du joueur (constante MerellePawn.PAWN_*)
+     * @return tableau de 3 positions ou null
+     */
+    public int[] getMillContaining(int pos, int playerColor) {
+        for (int[] mill : MILLS) {
+            boolean posInMill = false;
+            for (int p : mill) if (p == pos) { posInMill = true; break; }
+            if (!posInMill) continue;
+            boolean allSame = true;
+            for (int p : mill) {
+                MerellePawn pw = getPawnAt(p);
+                if (pw == null || pw.getColor() != playerColor) { allSame = false; break; }
+            }
+            if (allSame) return mill.clone();
+        }
+        return null;
     }
 }

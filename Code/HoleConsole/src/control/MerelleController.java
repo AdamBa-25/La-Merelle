@@ -145,6 +145,10 @@ public class MerelleController extends Controller {
         MerelleStageModel stageModel = (MerelleStageModel) model.getGameStage();
         MerelleBoard board = stageModel.getBoard();
         int playerId = model.getIdPlayer();
+        // playerColor est la vraie couleur du pion (constante MerellePawn.PAWN_*)
+        // Elle peut différer de playerId si les joueurs choisissent des couleurs non-standard.
+        int playerColor  = (playerId == 0) ? stageModel.getColorJ1() : stageModel.getColorJ2();
+        int oppColor     = (playerId == 0) ? stageModel.getColorJ2() : stageModel.getColorJ1();
 
         // ============================================================
         // CAS 1 : Capture obligatoire après formation d'un moulin
@@ -166,18 +170,22 @@ public class MerelleController extends Controller {
                 System.out.println("ERREUR [RÈGLES] : aucun pion à capturer en " + coord.toUpperCase() + ".");
                 return false;
             }
-            if (target.getColor() == playerId) {
+            if (target.getColor() == playerColor) {
                 System.out.println("ERREUR [RÈGLES] : vous ne pouvez pas capturer votre propre pion !");
                 return false;
             }
-            int opp = 1 - playerId;
-            // Un pion en moulin est protégé, sauf si tous les adversaires sont en moulin
-            if (board.isInMill(pos, opp) && !board.allPawnsInMills(opp)) {
+            // Un pion en moulin est protégé, SAUF si tous les pions adverses sont en moulin
+            boolean allInMill = board.allPawnsInMills(oppColor);
+            if (board.isInMill(pos, oppColor) && !allInMill) {
                 System.out.println("ERREUR [RÈGLES] : ce pion est protégé par un moulin !");
                 System.out.println("  Choisissez un pion hors moulin.");
                 return false;
             }
-            // Exécute la capture via ActionFactory (comme le tutoriel)
+            // Message informatif si capture dans un moulin forcée (cas exceptionnel)
+            if (allInMill) {
+                System.out.println("  (Info) Tous les pions adverses sont en moulin : vous pouvez capturer n'importe lequel.");
+            }
+            // Exécute la capture via ActionFactory
             ActionList actions = ActionFactory.generateRemoveFromContainer(model, target);
             ActionPlayer play = new ActionPlayer(model, this, actions);
             play.start();
@@ -228,12 +236,32 @@ public class MerelleController extends Controller {
 
             stageModel.decreasePawnsInHand(playerId);
             stageModel.recordMove("place:" + pos);
-            System.out.println("  → " + model.getCurrentPlayerName() + " place un pion en " + input.toUpperCase());
+
+            // Affiche les pions restants en main pour les deux joueurs
+            int remaining0 = stageModel.getPawnsInHand(0);
+            int remaining1 = stageModel.getPawnsInHand(1);
+            System.out.println("  → " + model.getCurrentPlayerName()
+                    + " place un pion en " + input.toUpperCase()
+                    + " | Pions en main : "
+                    + model.getPlayers().get(0).getName() + " " + remaining0
+                    + "  /  "
+                    + model.getPlayers().get(1).getName() + " " + remaining1);
 
             // Détecte la formation d'un moulin
-            if (board.checkMillFormed(pos, playerId)) {
+            if (board.checkMillFormed(pos, playerColor)) {
+                // Mémorise ce moulin pour la règle "même moulin interdit 2 tours de suite".
+                // NOTE : on ne vérifie PAS isSameMillAsLast() ici car en phase de placement
+                // on pose des pions sans en déplacer — il est donc impossible de "casser"
+                // un moulin existant pour le reformer. La règle du PDF ne s'applique qu'à
+                // la phase de déplacement (cas 3 ci-dessous). On mémorise quand même le
+                // moulin pour que la règle soit active dès le premier tour de la phase 2.
+                int[] mill = board.getMillContaining(pos, playerColor);
+                if (mill != null) stageModel.recordLastMill(playerId, mill);
                 stageModel.setMillJustFormed(true);
                 System.out.println("  >>> MOULIN formé ! Capturez un pion adverse (ex: XA1) <<<");
+            } else {
+                // Pas de moulin : efface la mémoire du moulin précédent
+                stageModel.clearLastMill(playerId);
             }
             return true;
         }
@@ -261,7 +289,7 @@ public class MerelleController extends Controller {
             System.out.println("ERREUR [RÈGLES] : aucun pion en " + parts[0].toUpperCase() + ".");
             return false;
         }
-        if (pawn.getColor() != playerId) {
+        if (pawn.getColor() != playerColor) {
             System.out.println("ERREUR [RÈGLES] : ce pion ne vous appartient pas !");
             return false;
         }
@@ -275,7 +303,7 @@ public class MerelleController extends Controller {
             return false;
         }
 
-        // Déplace le pion via ActionFactory (MoveWithinContainer)
+        // Déplace le pion via ActionFactory
         ActionList actions = ActionFactory.generateMoveWithinContainer(
                 model, pawn,
                 MerelleBoard.POS_TO_GRID[dest][0],
@@ -288,9 +316,20 @@ public class MerelleController extends Controller {
                 + " déplace " + parts[0].toUpperCase() + " → " + parts[1].toUpperCase());
 
         // Détecte la formation d'un moulin après le déplacement
-        if (board.checkMillFormed(dest, playerId)) {
-            stageModel.setMillJustFormed(true);
-            System.out.println("  >>> MOULIN formé ! Capturez un pion adverse (ex: XA1) <<<");
+        if (board.checkMillFormed(dest, playerColor)) {
+            int[] mill = board.getMillContaining(dest, playerColor);
+            // Règle : un joueur ne peut pas casser et reformer le même moulin deux tours de suite
+            if (mill != null && stageModel.isSameMillAsLast(playerId, mill)) {
+                // Annuler le moulin : pas de capture autorisée ce tour
+                stageModel.clearLastMill(playerId);
+                System.out.println("  (Règle) Vous ne pouvez pas reformer le même moulin deux tours de suite : pas de capture.");
+            } else {
+                if (mill != null) stageModel.recordLastMill(playerId, mill);
+                stageModel.setMillJustFormed(true);
+                System.out.println("  >>> MOULIN formé ! Capturez un pion adverse (ex: XA1) <<<");
+            }
+        } else {
+            stageModel.clearLastMill(playerId);
         }
         return true;
     }
@@ -312,8 +351,12 @@ public class MerelleController extends Controller {
         if (stageModel.isMillJustFormed()) return;
 
         MerelleBoard board = stageModel.getBoard();
+        // Les couleurs réelles des deux joueurs (peuvent différer de 0/1)
+        int[] colors = { stageModel.getColorJ1(), stageModel.getColorJ2() };
+
         for (int pid = 0; pid < 2; pid++) {
-            int count = board.countPawns(pid);
+            int color = colors[pid];
+            int count = board.countPawns(color);
             // Défaite : moins de 3 pions
             if (count < 3) {
                 System.out.println(model.getPlayers().get(pid).getName()
@@ -323,7 +366,7 @@ public class MerelleController extends Controller {
                 return;
             }
             // Défaite : bloqué
-            if (board.isBlocked(pid)) {
+            if (board.isBlocked(color)) {
                 System.out.println(model.getPlayers().get(pid).getName()
                         + " est bloqué, aucun déplacement possible !");
                 model.setIdWinner(1 - pid);

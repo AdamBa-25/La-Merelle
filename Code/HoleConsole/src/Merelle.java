@@ -100,11 +100,7 @@ public class Merelle {
         }
 
         // --- Enregistrement du stage ---
-        StageFactory.registerModelAndView(
-                "merelle",
-                "model.MerelleStageModel",
-                "view.MerelleStageView"
-        );
+        StageFactory.registerModelAndView( "merelle", "model.MerelleStageModel", "view.MerelleStageView" );
 
         // --- Création de la vue et du contrôleur ---
         View view = new View(model);
@@ -113,11 +109,13 @@ public class Merelle {
 
         // --- Lancement ---
         System.out.println();
-        System.out.println("Coordonnées : lettre A-G + chiffre 1-7 (ex: A1, D4)");
+        System.out.println("Coordonnées : ligne A-G (haut→bas) + colonne 1-7 (gauche→droite)");
+        System.out.println("Positions valides : A1 A4 A7 | B2 B4 B6 | C3 C4 C5 | D1 D2 D3 D5 D6 D7 | etc.");
         System.out.println();
 
         GameException error = startGame(control);
-        if (error != null) {
+        if (error != null)
+        {
             System.out.println("Impossible de démarrer le jeu : " + error.getMessage());
             System.exit(1);
         }
@@ -171,9 +169,7 @@ public class Merelle {
 
             // EOF ou erreur de lecture → couleur par défaut
             if (line == null) {
-                choice = (forbidden == MerellePawn.PAWN_BLACK)
-                        ? MerellePawn.PAWN_RED
-                        : MerellePawn.PAWN_BLACK;
+                choice = (forbidden == MerellePawn.PAWN_BLACK) ? MerellePawn.PAWN_RED : MerellePawn.PAWN_BLACK;
                 valid = true;
                 continue;
             }
