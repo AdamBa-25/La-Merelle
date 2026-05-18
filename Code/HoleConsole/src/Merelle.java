@@ -4,75 +4,106 @@ import boardifier.model.GameException;
 import boardifier.model.Model;
 import boardifier.view.View;
 import control.MerelleController;
+import model.MerellePawn;
+import model.MerelleStageFactory;
 
-/**
- * Point d'entrée du jeu de la Mérelle.
- *
- * Usage : java Merelle [mode]
- *   mode 0 = Humain vs Humain  (défaut)
- *   mode 1 = Humain vs IA
- *   mode 2 = IA vs IA
- *
- * Lecture depuis un fichier d'entrée (section 1.4 des consignes) :
- *   java Merelle 0 < partie_normale.txt
- *
- * Syntaxe des ordres de jeu :
- *   Phase 1 (placement)   : "A1"      → place un pion en A1
- *   Phase 2 (déplacement) : "A1 B1"   → déplace de A1 vers B1
- *   Capture après moulin  : "XD4"     → capture le pion en D4
- *   Arrêt immédiat        : "stop"
- *
- * Système de coordonnées : lettre A-G (ligne), chiffre 1-7 (colonne).
- * A1 = coin haut-gauche, D4 = centre, G7 = coin bas-droite.
- *
- * Calqué sur HoleConsole.java du tutoriel.
- */
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Scanner;
+
 public class Merelle {
 
-    public static void main(String[] args) {
-
-        // Désactive les logs boardifier (trop verbeux en mode console)
+    public static void main(String[] args)
+    {
         Logger.setLevel(Logger.LOGGER_NONE);
 
         // --- Lecture du mode de jeu ---
-        int mode = 0;
-        if (args.length >= 1) {
-            try {
-                mode = Integer.parseInt(args[0]);
-                if (mode < 0 || mode > 2) {
-                    System.err.println("Mode invalide. Valeurs valides : 0, 1 ou 2.");
-                    System.err.println("  0 = Humain vs Humain");
-                    System.err.println("  1 = Humain vs IA");
-                    System.err.println("  2 = IA vs IA");
-                    System.exit(1);
-                }
-            } catch (NumberFormatException e) {
-                System.err.println("Mode invalide : '" + args[0] + "' (doit être 0, 1 ou 2).");
+        Scanner sc = new Scanner(System.in);
+        int mode;
+
+        if (args.length >= 1)
+        {
+            mode = parseMode(args[0]);
+
+            if (mode < 0)
+            {
+                System.err.println("Mode invalide : '" + args[0] + "' (doit être 0, 1 ou 2)");
+                System.err.println("0 = Humain vs Humain");
+                System.err.println("1 = Humain vs IA");
+                System.err.println("2 = IA vs IA");
+                System.exit(1);
+            }
+        }
+        else
+        {
+            System.out.println("Choisissez un mode de jeu :");
+            System.out.println("0 = Humain vs Humain");
+            System.out.println("1 = Humain vs IA");
+            System.out.println("2 = IA vs IA");
+            System.out.print("> ");
+
+            mode = sc.nextInt();
+
+            if (mode < 0 || mode > 2)
+            {
+                System.err.println("Mode invalide.");
                 System.exit(1);
             }
         }
 
+        System.out.println("La Merelle");
+        System.out.println();
+
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+
+        // --- Choix des couleurs selon le mode ---
+        int colorJ1;
+        int colorJ2;
+
+        if (mode == 0) {
+            System.out.println("Mode : Humain vs Humain");
+            MerellePawn.printColorMenu();
+            colorJ1 = chooseColor(br, "Joueur 1, choisissez votre couleur : ", -1);
+            colorJ2 = chooseColor(br, "Joueur 2, choisissez votre couleur : ", colorJ1);
+
+        } else if (mode == 1) {
+            System.out.println("Mode : Humain vs IA");
+            MerellePawn.printColorMenu();
+            colorJ1 = chooseColor(br, "Joueur 1, choisissez votre couleur : ", -1);
+            colorJ2 = pickColorForIA(colorJ1);
+            System.out.println("L'IA jouera avec la couleur : " + MerellePawn.getColorName(colorJ2));
+
+        } else {
+            System.out.println("Mode : IA vs IA");
+            colorJ1 = MerellePawn.PAWN_BLACK;
+            colorJ2 = MerellePawn.PAWN_RED;
+            System.out.println("IA 1 : " + MerellePawn.getColorName(colorJ1)
+                    + " | IA 2 : " + MerellePawn.getColorName(colorJ2));
+        }
+
+        // Transmet les couleurs à la factory avant la création du stage
+        MerelleStageFactory.colorJ1 = colorJ1;
+        MerelleStageFactory.colorJ2 = colorJ2;
+
         // --- Création du modèle et ajout des joueurs ---
         Model model = new Model();
         if (mode == 0) {
-            System.out.println("Mode : Humain vs Humain");
-            model.addHumanPlayer("Joueur N");
-            model.addHumanPlayer("Joueur R");
+            model.addHumanPlayer("Joueur 1");
+            model.addHumanPlayer("Joueur 2");
         } else if (mode == 1) {
-            System.out.println("Mode : Humain vs IA");
-            model.addHumanPlayer("Joueur N");
-            model.addComputerPlayer("Ordinateur R");
+            model.addHumanPlayer("Joueur 1");
+            model.addComputerPlayer("Ordinateur");
         } else {
-            System.out.println("Mode : IA vs IA");
-            model.addComputerPlayer("Ordi-N");
-            model.addComputerPlayer("Ordi-R");
+            model.addComputerPlayer("Ordi-1");
+            model.addComputerPlayer("Ordi-2");
         }
 
-        // --- Enregistrement du stage dans la factory ---
+        // --- Enregistrement du stage ---
         StageFactory.registerModelAndView(
-            "merelle",
-            "model.MerelleStageModel",
-            "view.MerelleStageView"
+                "merelle",
+                "model.MerelleStageModel",
+                "view.MerelleStageView"
         );
 
         // --- Création de la vue et du contrôleur ---
@@ -81,14 +112,124 @@ public class Merelle {
         control.setFirstStageName("merelle");
 
         // --- Lancement ---
-        System.out.println("=== JEU DE LA MERELLE ===");
-        System.out.println("N = Noir, R = Rouge | Coordonnées : lettre A-G + chiffre 1-7 (ex: A1, D4)");
         System.out.println();
+        System.out.println("Coordonnées : lettre A-G + chiffre 1-7 (ex: A1, D4)");
+        System.out.println();
+
+        GameException error = startGame(control);
+        if (error != null) {
+            System.out.println("Impossible de démarrer le jeu : " + error.getMessage());
+            System.exit(1);
+        }
+        control.stageLoop();
+    }
+
+    // MÉTHODES UTILITAIRES
+
+    /**
+     * Parse le mode de jeu depuis une chaîne.
+     * Retourne -1 si la chaîne n'est pas un entier valide ou hors plage 0-2.
+     */
+    private static int parseMode(String s) {
+        if (s == null || s.isEmpty()) return -1;
+        // Vérifie que tous les caractères sont des chiffres (et éventuellement un signe -)
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (!Character.isDigit(c)) return -1;
+        }
+        int val = Integer.parseInt(s);
+        if (val < 0 || val > 2) return -1;
+        return val;
+    }
+
+    /**
+     * Lance la partie et retourne l'exception si elle échoue, null sinon.
+     * Permet d'éviter un try/catch dans main().
+     */
+    private static GameException startGame(MerelleController control) {
         try {
             control.startGame();
-            control.stageLoop();
+            return null;
         } catch (GameException e) {
-            System.out.println("Impossible de démarrer le jeu : " + e.getMessage());
+            return e;
         }
+    }
+
+    /**
+     * Demande à l'utilisateur de choisir une couleur.
+     * Refuse la couleur "forbidden" (déjà prise par l'autre joueur).
+     * En cas d'EOF (fichier d'entrée), retourne une couleur par défaut.
+     */
+    private static int chooseColor(BufferedReader br, String prompt, int forbidden) {
+        int choice = -1;
+        boolean valid = false;
+
+        while (!valid) {
+            System.out.print(prompt);
+
+            String line = readLine(br);
+
+            // EOF ou erreur de lecture → couleur par défaut
+            if (line == null) {
+                choice = (forbidden == MerellePawn.PAWN_BLACK)
+                        ? MerellePawn.PAWN_RED
+                        : MerellePawn.PAWN_BLACK;
+                valid = true;
+                continue;
+            }
+
+            line = line.trim();
+            choice = parseIntOrMinus1(line);
+
+            if (choice == -1) {
+                System.out.println("Entrez un chiffre valide.");
+                continue;
+            }
+            if (!MerellePawn.isValidColor(choice)) {
+                System.out.println("Choix invalide (0 à " + (MerellePawn.NB_COLORS - 1) + ").");
+                continue;
+            }
+            if (choice == forbidden) {
+                System.out.println("Cette couleur est déjà prise, choisissez-en une autre.");
+                continue;
+            }
+            valid = true;
+        }
+        return choice;
+    }
+
+    /**
+     * Lit une ligne depuis le BufferedReader.
+     * Retourne null en cas d'erreur ou de fin de fichier, sans lever d'exception.
+     */
+    private static String readLine(BufferedReader br) {
+        try {
+            return br.readLine();
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Parse un entier depuis une chaîne.
+     * Retourne -1 si la chaîne ne représente pas un entier, sans lever d'exception.
+     */
+    private static int parseIntOrMinus1(String s) {
+        if (s == null || s.isEmpty()) return -1;
+        for (int i = 0; i < s.length(); i++) {
+            if (!Character.isDigit(s.charAt(i))) return -1;
+        }
+        return Integer.parseInt(s);
+    }
+
+    /**
+     * Choisit automatiquement une couleur pour l'IA,
+     * différente de celle du joueur humain.
+     */
+    private static int pickColorForIA(int humanColor) {
+        for (int i = 0; i < MerellePawn.NB_COLORS; i++) {
+            if (i != humanColor) return i;
+        }
+        return MerellePawn.PAWN_RED;
     }
 }

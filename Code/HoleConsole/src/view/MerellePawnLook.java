@@ -24,14 +24,9 @@ public class MerellePawnLook extends ElementLook {
     }
 
     @Override
-    protected void render() {
+    protected void render()
+    {
         MerellePawn pawn = (MerellePawn) element;
-        if (pawn.getColor() == MerellePawn.PAWN_BLACK) {
-            // Pion noir : lettre 'N' blanche sur fond noir
-            shape[0][0] = ConsoleColor.WHITE + ConsoleColor.BLACK_BACKGROUND + "N" + ConsoleColor.RESET;
-        } else {
-            // Pion rouge : lettre 'R' noire sur fond rouge
-            shape[0][0] = ConsoleColor.BLACK + ConsoleColor.RED_BACKGROUND + "R" + ConsoleColor.RESET;
-        }
+        shape[0][0] = pawn.getTextColor() + pawn.getBackgroundColor() + pawn.getSymbol() + ConsoleColor.RESET;
     }
 }

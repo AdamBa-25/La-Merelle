@@ -10,14 +10,22 @@ import boardifier.model.TextElement;
  * Crée et enregistre dans le stage tous les éléments du jeu :
  * - le plateau (MerelleBoard) en position (0,1) dans l'espace virtuel
  * - un TextElement pour le nom du joueur courant en (0,0)
- * - 9 pions noirs (joueur 0) et 9 pions rouges (joueur 1)
+ * - 9 pions joueur 0 et 9 pions joueur 1 avec les couleurs choisies
  *
- * Les pions ne sont pas placés sur le plateau à la création : ils seront
- * posés un à un durant la phase 1.
+ * Les couleurs sont transmises via colorJ1 / colorJ2 avant le lancement.
+ * Les pions ne sont pas placés sur le plateau à la création.
  *
  * Calqué sur HoleStageFactory.java du tutoriel HoleConsole.
  */
 public class MerelleStageFactory extends StageElementsFactory {
+
+    /**
+     * Couleurs choisies par les joueurs, assignées depuis Merelle.java
+     * avant que le stage soit créé.
+     * Valeurs par défaut : Noir pour J1, Rouge pour J2.
+     */
+    public static int colorJ1 = MerellePawn.PAWN_BLACK;
+    public static int colorJ2 = MerellePawn.PAWN_RED;
 
     private MerelleStageModel stageModel;
 
@@ -35,6 +43,12 @@ public class MerelleStageFactory extends StageElementsFactory {
      */
     @Override
     public void setup() {
+
+        // Sécurité : si une couleur invalide a été transmise, on remet les valeurs par défaut
+        if (!MerellePawn.isValidColor(colorJ1)) colorJ1 = MerellePawn.PAWN_BLACK;
+        if (!MerellePawn.isValidColor(colorJ2)) colorJ2 = MerellePawn.PAWN_RED;
+        if (colorJ1 == colorJ2) colorJ2 = MerellePawn.PAWN_RED;
+
         // --- TextElement : nom du joueur courant ---
         TextElement text = new TextElement(stageModel.getCurrentPlayerName(), stageModel);
         text.setLocation(0, 0);
@@ -44,18 +58,18 @@ public class MerelleStageFactory extends StageElementsFactory {
         MerelleBoard board = new MerelleBoard(0, 1, stageModel);
         stageModel.setBoard(board);
 
-        // --- 9 pions noirs (joueur 0) ---
-        MerellePawn[] blackPawns = new MerellePawn[9];
+        // --- 9 pions joueur 0 avec la couleur choisie ---
+        MerellePawn[] pawnsJ1 = new MerellePawn[9];
         for (int i = 0; i < 9; i++) {
-            blackPawns[i] = new MerellePawn(MerellePawn.PAWN_BLACK, stageModel);
+            pawnsJ1[i] = new MerellePawn(colorJ1, stageModel);
         }
-        stageModel.setBlackPawns(blackPawns);
+        stageModel.setBlackPawns(pawnsJ1);
 
-        // --- 9 pions rouges (joueur 1) ---
-        MerellePawn[] redPawns = new MerellePawn[9];
+        // --- 9 pions joueur 1 avec la couleur choisie ---
+        MerellePawn[] pawnsJ2 = new MerellePawn[9];
         for (int i = 0; i < 9; i++) {
-            redPawns[i] = new MerellePawn(MerellePawn.PAWN_RED, stageModel);
+            pawnsJ2[i] = new MerellePawn(colorJ2, stageModel);
         }
-        stageModel.setRedPawns(redPawns);
+        stageModel.setRedPawns(pawnsJ2);
     }
 }
