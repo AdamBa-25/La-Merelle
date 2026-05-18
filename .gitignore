@@ -1,0 +1,67 @@
+# =========================
+# IntelliJ IDEA
+# =========================
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Fichiers spécifiques IntelliJ
+.idea_modules/
+atlassian-ide-plugin.xml
+
+# =========================
+# Java
+# =========================
+*.class
+*.jar
+*.war
+*.ear
+
+# Logs
+*.log
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+
+# Gradle
+.gradle/
+build/
+
+# JVM crash logs
+hs_err_pid*
+replay_pid*
+
+# =========================
+# VS Code
+# =========================
+.vscode/
+
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Git
+# =========================
+# Fichiers temporaires de merge
+*.orig
+
+# Variables d'environnement
+.env
+.env.local
+
+# Clés et secrets
+*.key
+*.pem
+*.p12
+*.keystore

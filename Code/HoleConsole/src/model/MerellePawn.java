@@ -17,7 +17,7 @@ public class MerellePawn extends GameElement {
     private int color;
 
     /**
-     * @param color          PAWN_BLACK ou PAWN_RED
+     * @param color PAWN_BLACK ou PAWN_RED
      * @param gameStageModel le stage propriétaire de cet élément
      */
     public MerellePawn(int color, GameStageModel gameStageModel) {
