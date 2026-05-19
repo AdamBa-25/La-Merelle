@@ -32,4 +32,4 @@ Piece movement is also governed by specific rules:
 * The player whose turn it is must make a move, even if it means breaking an existing mill.
 * A player cannot break and reform the same mill on two consecutive turns.
 
-The rules for forming mills and capturing pieces mentioned earlier also apply during this phase.
+The rules for forming mills and capturing pieces mentioned earlier also apply during this phase.       
