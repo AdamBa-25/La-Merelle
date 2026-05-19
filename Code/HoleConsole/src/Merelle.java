@@ -243,7 +243,7 @@ public class Merelle {
         System.out.println("Choisissez la difficulté de l'IA :");
         System.out.println("1 - MiniMax");
         System.out.println("2 - Alpha-Beta");
-        System.out.println("3 - Monte Carlo");
+        System.out.println("3 - MCTS (Monte Carlo Tree Search)");
     }
 
     /**

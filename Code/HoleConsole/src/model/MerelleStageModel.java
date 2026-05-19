@@ -138,6 +138,14 @@ public class MerelleStageModel extends GameStageModel {
     }
 
     /**
+     * Retourne une copie de l'historique des derniers coups.
+     * Utilisé par le décideur IA pour pénaliser les répétitions.
+     */
+    public String[] getLastMoves() {
+        return lastMoves.clone();
+    }
+
+    /**
      * Enregistre le dernier coup joué pour la règle d'égalité par répétition.
      * @param move description du coup (ex. "place:4", "9->10", "capture:2")
      */
