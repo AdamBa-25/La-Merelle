@@ -4,6 +4,7 @@ import boardifier.model.GameException;
 import boardifier.model.Model;
 import boardifier.view.View;
 import control.MerelleController;
+import control.MerelleDecider;
 import model.MerellePawn;
 import model.MerelleStageFactory;
 
@@ -60,6 +61,12 @@ public class Merelle {
         // --- Choix des couleurs selon le mode ---
         int colorJ1;
         int colorJ2;
+
+        // --- Choix des difficulté pour l'IA ---
+        if (mode == 1 || mode == 2) {
+            int difficulty = chooseDifficulty(br);
+            MerelleDecider.aiDifficulty = difficulty;
+        }
 
         if (mode == 0) {
             System.out.println("Mode : Humain vs Humain");
@@ -227,5 +234,53 @@ public class Merelle {
             if (i != humanColor) return i;
         }
         return MerellePawn.PAWN_RED;
+    }
+
+    /**
+     * Affiche le menu de difficulté de l'IA.
+     */
+    private static void printDifficultyMenu() {
+        System.out.println("Choisissez la difficulté de l'IA :");
+        System.out.println("1 - MiniMax");
+        System.out.println("2 - Alpha-Beta");
+        System.out.println("3 - Monte Carlo");
+    }
+
+    /**
+     * Demande à l'utilisateur de choisir la difficulté de l'IA.
+     * Retourne la constante correspondante de MerelleDecider.
+     */
+    private static int chooseDifficulty(BufferedReader br) {
+        printDifficultyMenu();
+
+        int choice = -1;
+        boolean valid = false;
+
+        while (!valid) {
+            System.out.print("> ");
+            String line = readLine(br);
+
+            // EOF → difficulté par défaut
+            if (line == null) {
+                choice = MerelleDecider.DIFFICULTY_MINIMAX;
+                valid = true;
+                continue;
+            }
+
+            line = line.trim();
+            int val = parseIntOrMinus1(line);
+
+            if (val < 1 || val > 3) {
+                System.out.println("Choix invalide (entrez 1, 2 ou 3).");
+                continue;
+            }
+
+            choice = val;
+            valid = true;
+        }
+
+        String[] names = { "", "MiniMax", "Alpha-Beta", "Monte Carlo" };
+        System.out.println("Difficulté choisie : " + names[choice]);
+        return choice;
     }
 }

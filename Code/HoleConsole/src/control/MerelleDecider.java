@@ -28,6 +28,12 @@ import java.util.Random;
  */
 public class MerelleDecider extends Decider {
 
+    public static final int DIFFICULTY_MINIMAX    = 1;
+    public static final int DIFFICULTY_ALPHABETA  = 2;
+    public static final int DIFFICULTY_MONTECARLO = 3;
+
+    public static int aiDifficulty = DIFFICULTY_MINIMAX;
+
     private static final Random random = new Random();
 
     public MerelleDecider(Model model, Controller control) {
