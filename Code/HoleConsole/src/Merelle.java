@@ -90,8 +90,7 @@ public class Merelle {
         }
 
         // Transmet les couleurs à la factory avant la création du stage
-        MerelleStageFactory.colorJ1 = colorJ1;
-        MerelleStageFactory.colorJ2 = colorJ2;
+        MerelleStageFactory.setColors(colorJ1, colorJ2);
 
         // --- Création du modèle et ajout des joueurs ---
         Model model = new Model();

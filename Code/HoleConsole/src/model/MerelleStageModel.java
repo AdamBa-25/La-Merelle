@@ -24,8 +24,11 @@ public class MerelleStageModel extends GameStageModel {
     /** Phase 2 : déplacement des pions */
     public static final int PHASE_DEPLACEMENT = 1;
 
-    /** Nombre de coups mémorisés pour la règle d'égalité par répétition */
-    private static final int DRAW_HISTORY_SIZE = 3;
+    /**
+     * Taille de l'historique : on stocke 5 snapshots pour pouvoir comparer
+     * 3 positions du MÊME joueur (indices 0, 2, 4 — espacés d'un tour chacun).
+     */
+    private static final int DRAW_HISTORY_SIZE = 5;
 
     // --- Éléments du jeu ---
     private MerelleBoard board;
@@ -76,10 +79,14 @@ public class MerelleStageModel extends GameStageModel {
     public MerellePawn[] getPawnsJ1() { return pawnsJ1; }
 
     /**
-     * Retourne la couleur (constante MerellePawn.PAWN_*) du joueur 0.
-     * Lue depuis le premier pion de J1 — valide dès que les pions sont créés.
+     * Retourne la couleur du joueur 0.
+     * Valeur de secours si les pions ne sont pas encore initialisés (évite un NPE).
      */
-    public int getColorJ1() { return pawnsJ1[0].getColor(); }
+    public int getColorJ1() {
+        if (pawnsJ1 == null || pawnsJ1.length == 0) return MerellePawn.PAWN_BLACK;
+        return pawnsJ1[0].getColor();
+    }
+
     public void setPawnsJ1(MerellePawn[] pawns) {
         this.pawnsJ1 = pawns;
         for (MerellePawn p : pawns) addElement(p);
@@ -88,10 +95,13 @@ public class MerelleStageModel extends GameStageModel {
     public MerellePawn[] getPawnsJ2() { return pawnsJ2; }
 
     /**
-     * Retourne la couleur (constante MerellePawn.PAWN_*) du joueur 1.
-     * Lue depuis le premier pion de J2 — valide dès que les pions sont créés.
+     * Retourne la couleur du joueur 1.
+     * Valeur de secours si les pions ne sont pas encore initialisés (évite un NPE).
      */
-    public int getColorJ2() { return pawnsJ2[0].getColor(); }
+    public int getColorJ2() {
+        if (pawnsJ2 == null || pawnsJ2.length == 0) return MerellePawn.PAWN_RED;
+        return pawnsJ2[0].getColor();
+    }
     public void setPawnsJ2(MerellePawn[] pawns) {
         this.pawnsJ2 = pawns;
         for (MerellePawn p : pawns) addElement(p);
@@ -147,24 +157,31 @@ public class MerelleStageModel extends GameStageModel {
 
     /**
      * Enregistre le dernier coup joué pour la règle d'égalité par répétition.
-     * @param move description du coup (ex. "place:4", "9->10", "capture:2")
+     * Le playerId est préfixé dans la chaîne pour que les snapshots de deux joueurs
+     * différents ne soient jamais considérés comme identiques.
+     *
+     * @param playerId index du joueur courant (0 ou 1)
+     * @param move     description du coup (ex. "place:4", "9->10", "capture:2")
      */
-    public void recordMove(String move) {
+    public void recordMove(int playerId, String move) {
+        String snapshot = playerId + ":" + move;
         for (int i = DRAW_HISTORY_SIZE - 1; i > 0; i--) {
             lastMoves[i] = lastMoves[i - 1];
         }
-        lastMoves[0] = move;
+        lastMoves[0] = snapshot;
     }
 
     /**
-     * Retourne true si les derniers coups sont tous identiques (égalité par répétition).
+     * Retourne true si le même joueur a joué exactement le même coup
+     * 3 fois de suite (égalité par répétition).
+     *
+     * Avec un historique de 5 entrées alternant J0/J1/J0/J1/J0,
+     * les indices 0, 2, 4 correspondent au même joueur.
+     * On compare lastMoves[0] == lastMoves[2] == lastMoves[4].
      */
     public boolean isDrawByRepetition() {
-        if (lastMoves[0] == null) return false;
-        for (int i = 1; i < DRAW_HISTORY_SIZE; i++) {
-            if (lastMoves[i] == null || !lastMoves[i].equals(lastMoves[0])) return false;
-        }
-        return true;
+        if (lastMoves[0] == null || lastMoves[2] == null || lastMoves[4] == null) return false;
+        return lastMoves[0].equals(lastMoves[2]) && lastMoves[2].equals(lastMoves[4]);
     }
 
     // ===== Gestion de la règle "même moulin interdit deux tours de suite" =====

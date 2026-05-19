@@ -190,7 +190,6 @@ public class MerelleController extends Controller {
             ActionPlayer play = new ActionPlayer(model, this, actions);
             play.start();
             stageModel.setMillJustFormed(false);
-            stageModel.recordMove("capture:" + pos);
             System.out.println("  → " + model.getCurrentPlayerName() + " capture le pion en " + coord.toUpperCase() + " !");
             // Vérifie si l'adversaire a perdu
             checkEndConditions(stageModel);
@@ -235,7 +234,7 @@ public class MerelleController extends Controller {
             play.start();
 
             stageModel.decreasePawnsInHand(playerId);
-            stageModel.recordMove("place:" + pos);
+            stageModel.recordMove(playerId, "place:" + pos);
 
             // Affiche les pions restants en main pour les deux joueurs
             int remaining0 = stageModel.getPawnsInHand(0);
@@ -248,7 +247,7 @@ public class MerelleController extends Controller {
                     + model.getPlayers().get(1).getName() + " " + remaining1);
 
             // Détecte la formation d'un moulin
-            if (board.checkMillFormed(pos, playerColor)) {
+            if (board.isInMill(pos, playerColor)) {
                 // Mémorise ce moulin pour la règle "même moulin interdit 2 tours de suite".
                 // NOTE : on ne vérifie PAS isSameMillAsLast() ici car en phase de placement
                 // on pose des pions sans en déplacer — il est donc impossible de "casser"
@@ -311,12 +310,12 @@ public class MerelleController extends Controller {
         ActionPlayer play = new ActionPlayer(model, this, actions);
         play.start();
 
-        stageModel.recordMove(src + "->" + dest);
+        stageModel.recordMove(playerId, src + "->" + dest);
         System.out.println("  → " + model.getCurrentPlayerName()
                 + " déplace " + parts[0].toUpperCase() + " → " + parts[1].toUpperCase());
 
         // Détecte la formation d'un moulin après le déplacement
-        if (board.checkMillFormed(dest, playerColor)) {
+        if (board.isInMill(dest, playerColor)) {
             int[] mill = board.getMillContaining(dest, playerColor);
             // Règle : un joueur ne peut pas casser et reformer le même moulin deux tours de suite
             if (mill != null && stageModel.isSameMillAsLast(playerId, mill)) {

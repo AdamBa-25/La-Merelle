@@ -1,6 +1,5 @@
 package model;
 
-import boardifier.control.Logger;
 import boardifier.model.ContainerElement;
 import boardifier.model.GameElement;
 import boardifier.model.GameStageModel;
@@ -267,16 +266,8 @@ public class MerelleBoard extends ContainerElement {
         return false;
     }
 
-    /**
-     * Retourne true si un moulin vient d'être formé à pos pour la couleur playerColor.
-     * Simple alias de isInMill(), appelé après chaque placement ou déplacement.
-     *
-     * @param pos         position logique (0-23) où le pion vient d'être posé/déplacé
-     * @param playerColor couleur du joueur (constante MerellePawn.PAWN_*)
-     */
-    public boolean checkMillFormed(int pos, int playerColor) {
-        return isInMill(pos, playerColor);
-    }
+    // checkMillFormed() supprimé : c'était un alias exact d'isInMill().
+    // Utiliser directement isInMill(pos, playerColor) dans le contrôleur.
 
     /**
      * Compte et retourne le nombre de pions de la couleur playerColor sur le plateau.
@@ -297,34 +288,45 @@ public class MerelleBoard extends ContainerElement {
      * Retourne true si le joueur de couleur playerColor ne peut plus bouger aucun pion.
      * Pour chaque pion de cette couleur, vérifie si au moins une case adjacente est libre.
      * Dès qu'une case libre est trouvée, retourne false (pas bloqué).
+     * Retourne false si le joueur n'a aucun pion : la fin de partie est alors gérée
+     * par la condition "moins de 3 pions", pas par le blocage.
      *
      * @param playerColor couleur du joueur (constante MerellePawn.PAWN_*)
      */
     public boolean isBlocked(int playerColor) {
+        boolean hasPawn = false;
         for (int pos = 0; pos < 24; pos++) {
             MerellePawn pw = getPawnAt(pos);
             if (pw != null && pw.getColor() == playerColor) {
+                hasPawn = true;
                 for (int adj : ADJACENCY[pos])
                     if (isFreeAt(adj)) return false; // ce pion peut bouger → pas bloqué
             }
         }
-        return true; // aucun pion ne peut bouger
+        // Aucun pion sur le plateau → défaite par "moins de 3 pions", pas par blocage
+        if (!hasPawn) return false;
+        return true; // des pions existent mais aucun ne peut bouger
     }
 
     /**
      * Retourne true si tous les pions de la couleur playerColor sont dans des moulins.
      * Cas spécial : si c'est vrai, les règles autorisent à capturer un pion en moulin.
+     * Retourne false si le joueur n'a aucun pion (pas de pions = pas "tous en moulin").
      *
      * @param playerColor couleur du joueur (constante MerellePawn.PAWN_*)
      */
     public boolean allPawnsInMills(int playerColor) {
+        boolean found = false;
         for (int pos = 0; pos < 24; pos++) {
             MerellePawn pw = getPawnAt(pos);
-            // Si un pion de cette couleur est hors moulin → pas tous en moulin
-            if (pw != null && pw.getColor() == playerColor && !isInMill(pos, playerColor))
-                return false;
+            if (pw != null && pw.getColor() == playerColor) {
+                found = true;
+                // Si un pion de cette couleur est hors moulin → pas tous en moulin
+                if (!isInMill(pos, playerColor)) return false;
+            }
         }
-        return true;
+        // Si aucun pion trouvé, retourner false (cas dégénéré, ne devrait pas arriver en jeu normal)
+        return found;
     }
 
     /**

@@ -18,12 +18,25 @@ import boardifier.model.TextElement;
 public class MerelleStageFactory extends StageElementsFactory {
 
     /**
-     * Couleurs choisies par les joueurs, assignées depuis Merelle.java
-     * avant que le stage soit créé.
+     * Couleurs choisies par les joueurs.
+     * Privées pour éviter toute modification non contrôlée depuis l'extérieur.
+     * À initialiser via setColors() depuis Merelle.java avant le lancement.
      * Valeurs par défaut : Noir pour J1, Rouge pour J2.
      */
-    public static int colorJ1 = MerellePawn.PAWN_BLACK;
-    public static int colorJ2 = MerellePawn.PAWN_RED;
+    private static int colorJ1 = MerellePawn.PAWN_BLACK;
+    private static int colorJ2 = MerellePawn.PAWN_RED;
+
+    /**
+     * Initialise les couleurs des deux joueurs avant le démarrage du stage.
+     * À appeler depuis Merelle.java après le choix des couleurs.
+     *
+     * @param c1 couleur du joueur 0 (constante MerellePawn.PAWN_*)
+     * @param c2 couleur du joueur 1 (constante MerellePawn.PAWN_*)
+     */
+    public static void setColors(int c1, int c2) {
+        colorJ1 = c1;
+        colorJ2 = c2;
+    }
 
     private MerelleStageModel stageModel;
 
