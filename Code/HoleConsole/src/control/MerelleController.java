@@ -65,6 +65,17 @@ public class MerelleController extends Controller {
         MerelleStageModel stageModel = (MerelleStageModel) model.getGameStage();
 
         if (p.getType() == Player.COMPUTER) {
+            // Vérifie d'abord si quelqu'un a tapé "stop" dans le terminal
+            try {
+                if (consoleIn.ready()) {
+                    String line = consoleIn.readLine();
+                    if (line != null && line.trim().toLowerCase().contains("stop")) {
+                        System.out.println("Arrêt demandé. Fin du jeu.");
+                        System.exit(0);
+                    }
+                }
+            } catch (IOException ignored) {}
+
             // Joueur IA : demande la décision au décideur
             System.out.println(p.getName() + " (IA) réfléchit...");
             MerelleDecider decider = new MerelleDecider(model, this);
@@ -302,6 +313,15 @@ public class MerelleController extends Controller {
             return false;
         }
 
+        // Règle : on ne peut pas casser un moulin et le reformer au coup suivant.
+        // On simule le déplacement sur une copie pour détecter le moulin résultant,
+        // AVANT d'appliquer quoi que ce soit au vrai plateau.
+        if (wouldReformSameMill(board, src, dest, playerColor, playerId, stageModel)) {
+            System.out.println("ERREUR [RÈGLES] : vous ne pouvez pas reformer le même moulin deux tours de suite !");
+            System.out.println("  Déplacez un autre pion ou choisissez une autre destination.");
+            return false;
+        }
+
         // Déplace le pion via ActionFactory
         ActionList actions = ActionFactory.generateMoveWithinContainer(
                 model, pawn,
@@ -317,16 +337,9 @@ public class MerelleController extends Controller {
         // Détecte la formation d'un moulin après le déplacement
         if (board.isInMill(dest, playerColor)) {
             int[] mill = board.getMillContaining(dest, playerColor);
-            // Règle : un joueur ne peut pas casser et reformer le même moulin deux tours de suite
-            if (mill != null && stageModel.isSameMillAsLast(playerId, mill)) {
-                // Annuler le moulin : pas de capture autorisée ce tour
-                stageModel.clearLastMill(playerId);
-                System.out.println("  (Règle) Vous ne pouvez pas reformer le même moulin deux tours de suite : pas de capture.");
-            } else {
-                if (mill != null) stageModel.recordLastMill(playerId, mill);
-                stageModel.setMillJustFormed(true);
-                System.out.println("  >>> MOULIN formé ! Capturez un pion adverse (ex: XA1) <<<");
-            }
+            if (mill != null) stageModel.recordLastMill(playerId, mill);
+            stageModel.setMillJustFormed(true);
+            System.out.println("  >>> MOULIN formé ! Capturez un pion adverse (ex: XA1) <<<");
         } else {
             stageModel.clearLastMill(playerId);
         }
@@ -433,5 +446,42 @@ public class MerelleController extends Controller {
         for (MerellePawn pawn : pawns)
             if (pawn.getContainer() == null) return pawn;
         return null;
+    }
+
+    /**
+     * Vérifie si déplacer src→dest formerait un moulin identique au dernier
+     * moulin mémorisé pour ce joueur (règle : même moulin interdit 2 tours de suite).
+     * La vérification est faite SANS modifier le plateau réel.
+     *
+     * @param board      plateau actuel
+     * @param src        position source
+     * @param dest       position destination
+     * @param color      couleur du joueur
+     * @param playerId   index du joueur (0 ou 1)
+     * @param stageModel modèle du stage courant
+     * @return true si le déplacement reformerait le même moulin
+     */
+    private boolean wouldReformSameMill(MerelleBoard board, int src, int dest,
+                                        int color, int playerId,
+                                        MerelleStageModel stageModel) {
+        // Vérifie si dest participerait à un moulin après le déplacement
+        for (int[] mill : MerelleBoard.MILLS) {
+            // Le moulin doit contenir dest
+            boolean containsDest = false;
+            for (int p : mill) if (p == dest) { containsDest = true; break; }
+            if (!containsDest) continue;
+
+            // Vérifie si les 3 cases seraient toutes de la bonne couleur après le déplacement
+            boolean wouldForm = true;
+            for (int p : mill) {
+                if (p == dest) continue; // sera occupé par le pion déplacé
+                if (p == src)  { wouldForm = false; break; } // src sera vide après
+                MerellePawn pw = board.getPawnAt(p);
+                if (pw == null || pw.getColor() != color) { wouldForm = false; break; }
+            }
+
+            if (wouldForm && stageModel.isSameMillAsLast(playerId, mill)) return true;
+        }
+        return false;
     }
 }

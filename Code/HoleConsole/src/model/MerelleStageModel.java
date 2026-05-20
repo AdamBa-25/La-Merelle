@@ -172,16 +172,20 @@ public class MerelleStageModel extends GameStageModel {
     }
 
     /**
-     * Retourne true si le même joueur a joué exactement le même coup
-     * 3 fois de suite (égalité par répétition).
+     * Retourne true si les deux joueurs ont répété le même coup deux fois chacun
+     * (égalité par répétition sur 4 coups : lastMoves[0]==lastMoves[2] ET lastMoves[1]==lastMoves[3]).
      *
-     * Avec un historique de 5 entrées alternant J0/J1/J0/J1/J0,
-     * les indices 0, 2, 4 correspondent au même joueur.
-     * On compare lastMoves[0] == lastMoves[2] == lastMoves[4].
+     * Avec un historique alterné J0/J1/J0/J1 :
+     *   index 0 = dernier coup J0
+     *   index 1 = dernier coup J1
+     *   index 2 = avant-dernier coup J0
+     *   index 3 = avant-dernier coup J1
+     * Si [0]==[2] ET [1]==[3], les deux joueurs ont joué le même coup 2 fois de suite.
      */
     public boolean isDrawByRepetition() {
-        if (lastMoves[0] == null || lastMoves[2] == null || lastMoves[4] == null) return false;
-        return lastMoves[0].equals(lastMoves[2]) && lastMoves[2].equals(lastMoves[4]);
+        if (lastMoves[0] == null || lastMoves[1] == null
+                || lastMoves[2] == null || lastMoves[3] == null) return false;
+        return lastMoves[0].equals(lastMoves[2]) && lastMoves[1].equals(lastMoves[3]);
     }
 
     // ===== Gestion de la règle "même moulin interdit deux tours de suite" =====
